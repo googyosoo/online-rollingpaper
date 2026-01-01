@@ -44,12 +44,35 @@ export default function Home() {
     }
   };
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const handleGoogleLogin = async () => {
+    setErrorMsg(null);
+
+    // Environment Variable Check
+    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+      setErrorMsg('설정 오류: Firebase API Key가 없습니다. Vercel 환경변수를 확인해주세요.');
+      return;
+    }
+
     try {
       await signInWithGoogle();
     } catch (error: any) {
       console.error('Login failed:', error);
-      alert(`로그인에 실패했습니다.\n${error?.message || '알 수 없는 오류'}`);
+      let msg = error?.message || '알 수 없는 오류가 발생했습니다.';
+
+      // Initial user-friendly translation
+      if (msg.includes('auth/unauthorized-domain')) {
+        msg = `도메인 승인 필요: Firebase Console > Authentication > Settings > Authorized domains에\n'${window.location.hostname}'을 추가해주세요.\n(Error: ${msg})`;
+      } else if (msg.includes('auth/popup-closed-by-user')) {
+        msg = '로그인 창이 닫혔습니다. 다시 시도해주세요.';
+      } else if (msg.includes('auth/invalid-api-key')) {
+        msg = 'API Key 오류: Vercel 환경변수가 올바르지 않습니다.';
+      }
+
+      setErrorMsg(msg);
+      // alert only if needed, but on-screen is better for copy-paste
+      // alert(`로그인 실패:\n${msg}`);
     }
   };
 
@@ -163,6 +186,17 @@ export default function Home() {
             <span className="group-hover:text-blue-600 transition-colors">Google 계정으로 시작하기</span>
             <ArrowRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
           </button>
+
+          {errorMsg && (
+            <div className="mt-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-left animate-shake">
+              <h3 className="text-red-800 font-bold mb-1 flex items-center gap-2">
+                ⚠️ 로그인 오류
+              </h3>
+              <p className="text-red-600 text-sm whitespace-pre-wrap font-mono">
+                {errorMsg}
+              </p>
+            </div>
+          )}
         </div>
       </main>
     );

@@ -47,9 +47,9 @@ export default function Home() {
   const handleGoogleLogin = async () => {
     try {
       await signInWithGoogle();
-    } catch (error) {
-      // console.error already in AuthContext
-      alert('로그인에 실패했습니다.');
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      alert(`로그인에 실패했습니다.\n${error?.message || '알 수 없는 오류'}`);
     }
   };
 
@@ -365,8 +365,8 @@ export default function Home() {
                 type="submit"
                 disabled={isLoading || !title.trim() || (isAdminCreating && !customId.trim())}
                 className={`w-full py-4 rounded-xl font-bold text-white shadow-lg hover:shadow-xl disabled:opacity-50 transition-all flex items-center justify-center gap-2 ${isAdminCreating
-                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600'
-                    : 'bg-gradient-to-r from-pink-500 to-rose-500'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600'
+                  : 'bg-gradient-to-r from-pink-500 to-rose-500'
                   }`}
               >
                 {isLoading ? '생성 중...' : (

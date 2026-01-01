@@ -49,16 +49,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signInWithGoogle = async (): Promise<User | null> => {
         try {
             const result = await signInWithPopup(auth, provider);
-            // Record login
+            // Record login (Non-blocking)
             if (result.user) {
-                await recordLogin({
-                    uid: result.user.uid,
-                    email: result.user.email || '',
-                    displayName: result.user.displayName || ''
-                });
+                try {
+                    await recordLogin({
+                        uid: result.user.uid,
+                        email: result.user.email || '',
+                        displayName: result.user.displayName || ''
+                    });
+                } catch (logError) {
+                    console.error('Failed to record login log:', logError);
+                    // Continue even if logging fails
+                }
             }
             return result.user;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Google sign in error:', error);
             throw error;
         }

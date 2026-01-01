@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getRollingPaper, getMessages, addMessage, addHeart, updateRollingPaperSettings, Message, RollingPaper } from '@/lib/firebase';
 import { getTheme, Theme } from '@/lib/themes';
 import { getFont, Font, googleFontsUrl } from '@/lib/fonts';
+import { useAuth } from '@/contexts/AuthContext';
 import MessageCard from '@/components/MessageCard';
 import MessageModal from '@/components/MessageModal';
 import ShareModal from '@/components/ShareModal';
@@ -12,7 +13,7 @@ import ThemeSelector from '@/components/ThemeSelector';
 import FontSelector from '@/components/FontSelector';
 import ViewToggle from '@/components/ViewToggle';
 import FAB from '@/components/FAB';
-import { Share2, Home, Lock, Search, X } from 'lucide-react';
+import { Share2, Home, Lock, Search, X, LogIn } from 'lucide-react';
 
 interface PageProps {
     params: Promise<{ paperId: string }>;
@@ -21,6 +22,7 @@ interface PageProps {
 export default function PaperPage({ params }: PageProps) {
     const resolvedParams = use(params);
     const router = useRouter();
+    const { user, signInWithGoogle } = useAuth();
     const [paper, setPaper] = useState<RollingPaper | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [theme, setTheme] = useState<Theme>(getTheme('default'));
@@ -304,8 +306,18 @@ export default function PaperPage({ params }: PageProps) {
                     </div>
                 </main>
 
-                {/* FAB */}
-                <FAB onClick={() => setIsMessageModalOpen(true)} />
+                {/* FAB - 로그인한 사용자만 */}
+                {user ? (
+                    <FAB onClick={() => setIsMessageModalOpen(true)} />
+                ) : (
+                    <button
+                        onClick={signInWithGoogle}
+                        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
+                    >
+                        <LogIn className="w-5 h-5" />
+                        로그인하고 메시지 남기기
+                    </button>
+                )}
 
                 {/* Modals */}
                 <MessageModal

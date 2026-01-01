@@ -2,7 +2,18 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { getRollingPaper, getMessages, addMessage, addHeart, updateRollingPaperSettings, Message, RollingPaper } from '@/lib/firebase';
+import {
+    getRollingPaper,
+    getMessages,
+    addMessage,
+    addHeart,
+    updateMessage,
+    deleteMessage,
+    updateRollingPaperSettings,
+    Message,
+    RollingPaper,
+    ADMIN_EMAILS
+} from '@/lib/firebase';
 import { getTheme, Theme } from '@/lib/themes';
 import { getFont, Font, googleFontsUrl } from '@/lib/fonts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -103,17 +114,43 @@ export default function PaperPage({ params }: PageProps) {
 
     const handleAddMessage = async (message: { author: string; emoji: string; content: string }) => {
         try {
-            await addMessage(resolvedParams.paperId, message);
+            await addMessage(
+                resolvedParams.paperId,
+                message,
+                user ? { uid: user.uid, email: user.email || '' } : undefined
+            );
             const msgs = await getMessages(resolvedParams.paperId);
             setMessages(msgs);
-            setRotations(msgs.map(() => Math.random() * 16 - 8));
-            setPositions(msgs.map((_, index) => ({
-                left: (index % 4) * 24 + Math.random() * 8,
-                top: Math.floor(index / 4) * 200 + Math.random() * 40
-            })));
+            // new message position
+            setRotations(prev => [...prev, Math.random() * 16 - 8]);
+            setPositions(prev => [...prev, {
+                left: (msgs.length % 4) * 24 + Math.random() * 8,
+                top: Math.floor(msgs.length / 4) * 200 + Math.random() * 40
+            }]);
         } catch (error) {
             console.error('Failed to add message:', error);
             alert('메시지 추가에 실패했습니다.');
+        }
+    };
+
+    const handleDeleteMessage = async (messageId: string) => {
+        if (!confirm('정말로 삭제하시겠습니까?')) return;
+        try {
+            await deleteMessage(resolvedParams.paperId, messageId);
+            setMessages(prev => prev.filter(m => m.id !== messageId));
+        } catch (error) {
+            console.error('Failed to delete message:', error);
+            alert('삭제에 실패했습니다.');
+        }
+    };
+
+    const handleUpdateMessage = async (messageId: string, content: string) => {
+        try {
+            await updateMessage(resolvedParams.paperId, messageId, { content });
+            setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content } : m));
+        } catch (error) {
+            console.error('Failed to update message:', error);
+            alert('수정에 실패했습니다.');
         }
     };
 
@@ -297,7 +334,14 @@ export default function PaperPage({ params }: PageProps) {
                                             font={font}
                                             viewMode={viewMode}
                                             rotation={mounted ? (rotations[index] || 0) : 0}
+                                            isOwner={
+                                                (user && message.authorUid === user.uid) ||
+                                                (user?.email && ADMIN_EMAILS.includes(user.email)) ||
+                                                false
+                                            }
                                             onHeart={handleHeart}
+                                            onDelete={handleDeleteMessage}
+                                            onUpdate={handleUpdateMessage}
                                         />
                                     </div>
                                 );

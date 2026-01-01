@@ -10,6 +10,7 @@ import {
     User
 } from 'firebase/auth';
 import { getApps, initializeApp } from 'firebase/app';
+import { recordLogin } from '@/lib/firebase';
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -27,7 +28,7 @@ const provider = new GoogleAuthProvider();
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    signInWithGoogle: () => Promise<void>;
+    signInWithGoogle: () => Promise<User | null>;
     signOut: () => Promise<void>;
 }
 
@@ -45,9 +46,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => unsubscribe();
     }, []);
 
-    const signInWithGoogle = async () => {
+    const signInWithGoogle = async (): Promise<User | null> => {
         try {
-            await signInWithPopup(auth, provider);
+            const result = await signInWithPopup(auth, provider);
+            // Record login
+            if (result.user) {
+                await recordLogin({
+                    uid: result.user.uid,
+                    email: result.user.email || '',
+                    displayName: result.user.displayName || ''
+                });
+            }
+            return result.user;
         } catch (error) {
             console.error('Google sign in error:', error);
             throw error;

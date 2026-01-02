@@ -350,18 +350,16 @@ export default function PaperPage({ params }: PageProps) {
                     </div>
                 </main>
 
-                {/* FAB - 로그인한 사용자만 */}
-                {user ? (
-                    <FAB onClick={() => setIsMessageModalOpen(true)} />
-                ) : (
-                    <button
-                        onClick={signInWithGoogle}
-                        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
-                    >
-                        <LogIn className="w-5 h-5" />
-                        로그인하고 메시지 남기기
-                    </button>
-                )}
+                {/* FAB - Everyone sees it, but action depends on auth */}
+                <FAB
+                    onClick={() => {
+                        if (user) {
+                            setIsMessageModalOpen(true);
+                        } else {
+                            signInWithGoogle();
+                        }
+                    }}
+                />
 
                 {/* Modals */}
                 <MessageModal
